@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BusMap AI Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-wrap">
+      <div class="logo-mark">🚌</div>
+      <div>
+        <strong>BusMap AI Pro</strong>
+        <span>Smart Public Transport Assistant</span>
+      </div>
+    </div>
+    <div class="topbar-badge">AI Hackathon Ready</div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-copy glass">
+      <span class="eyebrow">ALBANIA PUBLIC TRANSPORT EXPERIENCE</span>
+      <h1>Gjej stacionet, planifiko linjën dhe pyet chatbotin në një vend.</h1>
+      <p>Versioni final i BusMap AI Pro kombinon hartën interaktive, vendndodhjen reale, kërkimin e stacioneve, planifikimin e thjeshtë të udhëtimit dhe një chatbot me përgjigje më natyrale për linjat, oraret dhe stacionet.</p>
+      <div class="hero-actions">
+        <button id="locateBtn" class="primary-btn">Gjej vendndodhjen time</button>
+        <button id="centerBtn" class="secondary-btn">Kthehu në hartën e Shqipërisë</button>
+      </div>
+      <p class="location-note">Kliko “Gjej vendndodhjen time” për të aktivizuar location dhe për të parë stacionin më të afërt.</p>
+      <div id="quickActions" class="quick-actions"></div>
+    </div>
+    <div class="hero-stats glass" id="heroStats"></div>
+  </section>
+
+  <section class="how-it-works glass">
+    <article>
+      <span>1</span>
+      <h3>Lejo location</h3>
+      <p>Përdor vendndodhjen reale për të gjetur stacionet më pranë.</p>
+    </article>
+    <article>
+      <span>2</span>
+      <h3>Shiko hartën</h3>
+      <p>Kërko sipas qytetit, klikoni stacionin dhe shiko linjat në popup.</p>
+    </article>
+    <article>
+      <span>3</span>
+      <h3>Pyet AI</h3>
+      <p>Merr përgjigje për orare, stacione, distancë dhe sugjerime udhëtimi.</p>
+    </article>
+  </section>
+
+  <main class="dashboard">
+    <aside class="side-column left-column">
+      <div class="panel glass info-grid">
+        <div class="mini-card accent-card">
+          <span class="mini-label">Stacioni më i afërt</span>
+          <div id="nearestStation" class="mini-value">Lejo vendndodhjen për rekomandim të personalizuar.</div>
+        </div>
+        <div class="mini-card">
+          <span class="mini-label">Përmbledhje e rrjetit</span>
+          <div id="summaryBox" class="mini-value">Po ngarkohet...</div>
+        </div>
+      </div>
+
+      <div class="panel glass">
+        <div class="panel-title-row">
+          <h3>Kërko stacion</h3>
+        </div>
+        <div class="station-search-row">
+          <input id="stationSearch" type="text" placeholder="Shkruaj qytet, zonë ose stacion" />
+          <button id="searchStationBtn" class="secondary-btn compact">Gjej</button>
+        </div>
+        <div id="stationResults" class="search-results">
+          <div class="empty-state">Kërko “Qendra Tiranë”, “Zogaj” ose “Durrës”.</div>
+        </div>
+      </div>
+
+      <div class="panel glass">
+        <div class="panel-title-row">
+          <h3>Planifiko udhëtimin</h3>
+        </div>
+        <div class="trip-planner">
+          <input id="fromInput" type="text" placeholder="Nga (p.sh. Qendra Tiranë)" />
+          <input id="toInput" type="text" placeholder="Në (p.sh. Terminali Vlorë)" />
+          <button id="planTripBtn" class="primary-btn full">Sugjero linjën</button>
+          <div id="tripResult" class="trip-result">Zgjidh pikën e nisjes dhe destinacionin për të parë sugjerimin.</div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="panel glass main-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Harta e stacioneve</h2>
+          <p id="status">Duke ngarkuar të dhënat...</p>
+        </div>
+        <div class="legend">
+          <span><i class="legend-dot bus"></i> Stacion autobusi</span>
+          <span><i class="legend-dot focus"></i> Stacion i theksuar</span>
+          <span><i class="legend-dot user"></i> Vendndodhja juaj</span>
+        </div>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <aside class="side-column right-column">
+      <div class="panel glass">
+        <div class="panel-title-row">
+          <h3>Linjat aktive</h3>
+          <input id="routeSearch" type="text" placeholder="Kërko linjë ose stacion" />
+        </div>
+        <div id="routesGrid" class="routes-grid"></div>
+      </div>
+
+      <div class="panel glass chatbot-panel">
+        <div class="panel-title-row">
+          <h3>Chatbot Assistant</h3>
+          <span class="badge">AI-ready</span>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+          <div class="message bot">Përshëndetje! Mund të më pyesësh për stacionin më të afërt, oraret, linjat aktive, stacionet e një linje ose si të shkosh nga A në B.</div>
+        </div>
+        <div id="chatSuggestions" class="quick-prompts">
+          <button class="prompt-chip">Cili është stacioni më i afërt?</button>
+          <button class="prompt-chip">Kur kalon A1?</button>
+          <button class="prompt-chip">Cilat stacione kalon D1?</button>
+          <button class="prompt-chip">Si të shkoj nga Qendra Tiranë në Terminali Vlorë?</button>
+        </div>
+        <div class="chat-input-row">
+          <input id="chatInput" type="text" placeholder="Shkruaj pyetjen këtu..." />
+          <button id="sendBtn" class="primary-btn">Dërgo</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <span>BusMap AI Pro • Built for AI Hackathon</span>
+    <span>Powered by OpenStreetMap + Flask + AI-style assistant</span>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
