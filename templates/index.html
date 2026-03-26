@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BusMap AI Pro</title>
+  <title>SKTS BusMap AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,21 +15,21 @@
     <div class="brand-wrap">
       <div class="logo-mark">🚌</div>
       <div>
-        <strong>BusMap AI Pro</strong>
-        <span>Smart Public Transport Assistant</span>
+        <strong>SKTS BusMap AI</strong>
+        <span>Asistent i transportit urban në Shkodër</span>
       </div>
     </div>
-    <div class="topbar-badge">AI Hackathon Ready</div>
+    <div class="topbar-badge">SKTS Demo</div>
   </header>
 
   <section class="hero">
     <div class="hero-copy glass">
-      <span class="eyebrow">ALBANIA PUBLIC TRANSPORT EXPERIENCE</span>
+      <span class="eyebrow">SHKODËR PUBLIC TRANSPORT EXPERIENCE</span>
       <h1>Gjej stacionet, planifiko linjën dhe pyet chatbotin në një vend.</h1>
-      <p>Versioni final i BusMap AI Pro kombinon hartën interaktive, vendndodhjen reale, kërkimin e stacioneve, planifikimin e thjeshtë të udhëtimit dhe një chatbot me përgjigje më natyrale për linjat, oraret dhe stacionet.</p>
+      <p>SKTS BusMap AI kombinon hartën interaktive, vendndodhjen reale, kërkimin e stacioneve, planifikimin e thjeshtë të udhëtimit dhe një chatbot për linjat, oraret dhe stacionet në Shkodër.</p>
       <div class="hero-actions">
         <button id="locateBtn" class="primary-btn">Gjej vendndodhjen time</button>
-        <button id="centerBtn" class="secondary-btn">Kthehu në hartën e Shqipërisë</button>
+        <button id="centerBtn" class="secondary-btn">Kthehu në hartën e Shkodrës</button>
       </div>
       <p class="location-note">Kliko “Gjej vendndodhjen time” për të aktivizuar location dhe për të parë stacionin më të afërt.</p>
       <div id="quickActions" class="quick-actions"></div>
@@ -46,11 +46,11 @@
     <article>
       <span>2</span>
       <h3>Shiko hartën</h3>
-      <p>Kërko sipas qytetit, klikoni stacionin dhe shiko linjat në popup.</p>
+      <p>Kërko sipas stacionit ose zonës, kliko stacionin dhe shiko linjat në popup.</p>
     </article>
     <article>
       <span>3</span>
-      <h3>Pyet AI</h3>
+      <h3>Pyet chatbotin</h3>
       <p>Merr përgjigje për orare, stacione, distancë dhe sugjerime udhëtimi.</p>
     </article>
   </section>
@@ -73,11 +73,11 @@
           <h3>Kërko stacion</h3>
         </div>
         <div class="station-search-row">
-          <input id="stationSearch" type="text" placeholder="Shkruaj qytet, zonë ose stacion" />
+          <input id="stationSearch" type="text" placeholder="Shkruaj stacionin ose zonën" />
           <button id="searchStationBtn" class="secondary-btn compact">Gjej</button>
         </div>
         <div id="stationResults" class="search-results">
-          <div class="empty-state">Kërko “Qendra Tiranë”, “Zogaj” ose “Durrës”.</div>
+          <div class="empty-state">Kërko “Qendra Shkodër”, “Bahçallëk”, “Shirokë” ose “Zogaj”.</div>
         </div>
       </div>
 
@@ -86,8 +86,8 @@
           <h3>Planifiko udhëtimin</h3>
         </div>
         <div class="trip-planner">
-          <input id="fromInput" type="text" placeholder="Nga (p.sh. Qendra Tiranë)" />
-          <input id="toInput" type="text" placeholder="Në (p.sh. Terminali Vlorë)" />
+          <input id="fromInput" type="text" placeholder="Nga (p.sh. Qendra Shkodër)" />
+          <input id="toInput" type="text" placeholder="Në (p.sh. Zogaj)" />
           <button id="planTripBtn" class="primary-btn full">Sugjero linjën</button>
           <div id="tripResult" class="trip-result">Zgjidh pikën e nisjes dhe destinacionin për të parë sugjerimin.</div>
         </div>
@@ -121,16 +121,16 @@
       <div class="panel glass chatbot-panel">
         <div class="panel-title-row">
           <h3>Chatbot Assistant</h3>
-          <span class="badge">AI-ready</span>
+          <span class="badge">SKTS AI</span>
         </div>
         <div id="chatMessages" class="chat-messages">
-          <div class="message bot">Përshëndetje! Mund të më pyesësh për stacionin më të afërt, oraret, linjat aktive, stacionet e një linje ose si të shkosh nga A në B.</div>
+          <div class="message bot">Përshëndetje! Mund të më pyesësh për stacionin më të afërt, oraret, linjat aktive, stacionet e një linje ose si të shkosh nga një stacion në tjetrin në Shkodër.</div>
         </div>
         <div id="chatSuggestions" class="quick-prompts">
           <button class="prompt-chip">Cili është stacioni më i afërt?</button>
-          <button class="prompt-chip">Kur kalon A1?</button>
-          <button class="prompt-chip">Cilat stacione kalon D1?</button>
-          <button class="prompt-chip">Si të shkoj nga Qendra Tiranë në Terminali Vlorë?</button>
+          <button class="prompt-chip">Kur kalon L1?</button>
+          <button class="prompt-chip">Cilat stacione kalon L2?</button>
+          <button class="prompt-chip">Si të shkoj nga Qendra Shkodër në Zogaj?</button>
         </div>
         <div class="chat-input-row">
           <input id="chatInput" type="text" placeholder="Shkruaj pyetjen këtu..." />
@@ -141,7 +141,7 @@
   </main>
 
   <footer class="footer">
-    <span>BusMap AI Pro • Built for AI Hackathon</span>
+    <span>SKTS BusMap AI • Demo për transportin urban në Shkodër</span>
     <span>Powered by OpenStreetMap + Flask + AI-style assistant</span>
   </footer>
 
