@@ -65,8 +65,9 @@ def match_station(name: str, stations: List[Dict]) -> Optional[Dict]:
     q = norm(name)
     if not q:
         return None
+
     for station in stations:
-        aliases = [station['name'], station.get('area', '')] + station.get('aliases', [])
+        aliases = [station['name'], station.get('area', ''), station.get('city', '')] + station.get('aliases', [])
         alias_norms = [norm(a) for a in aliases if a]
         if q in alias_norms or any(q in a for a in alias_norms):
             return station
@@ -76,7 +77,7 @@ def match_station(name: str, stations: List[Dict]) -> Optional[Dict]:
 def station_mentioned_in_text(text: str, stations: List[Dict]) -> Optional[Dict]:
     q = norm(text)
     for station in stations:
-        aliases = [station['name'], station.get('area', '')] + station.get('aliases', [])
+        aliases = [station['name'], station.get('area', ''), station.get('city', '')] + station.get('aliases', [])
         alias_norms = [norm(a) for a in aliases if a]
         if any(a and a in q for a in alias_norms):
             return station
@@ -115,11 +116,18 @@ def route_options_between(start: str, end: str, routes: List[Dict]) -> List[Dict
     start_lower = norm(start)
     end_lower = norm(end)
     matches = []
+
     for route in routes:
         stops_lower = [norm(stop) for stop in route['stops']]
         if any(start_lower in stop for stop in stops_lower) and any(end_lower in stop for stop in stops_lower):
             matches.append(route)
+
     return matches
+
+
+def stop_in_route(route: Dict, station_name: str) -> bool:
+    station_norm = norm(station_name)
+    return any(station_norm == norm(stop) or station_norm in norm(stop) for stop in route['stops'])
 
 
 def all_cities(stations: List[Dict]) -> int:
@@ -143,7 +151,12 @@ def build_station_popup(station: Dict, routes: List[Dict]) -> str:
     for route in routes_for_station(station, routes):
         route_labels.append(f"{route['id']} • {route['name']}")
     route_text = '<br>'.join(route_labels) if route_labels else 'Nuk ka të dhëna.'
-    return f"<strong>{station['name']}</strong><br>Qyteti: {station['city']}<br>Zona: {station['area']}<br><br><strong>Linjat:</strong><br>{route_text}"
+    return (
+        f"<strong>{station['name']}</strong><br>"
+        f"Qyteti: {station['city']}<br>"
+        f"Zona: {station['area']}<br><br>"
+        f"<strong>Linjat:</strong><br>{route_text}"
+    )
 
 
 def generate_chat_reply(message: str, lat: Optional[float], lng: Optional[float], data: Dict) -> Dict:
@@ -153,67 +166,175 @@ def generate_chat_reply(message: str, lat: Optional[float], lng: Optional[float]
 
     base = {'reply': '', 'suggestions': [], 'focus_station_id': None}
 
-    if any(term in q for term in ['pershendetje', 'hello', 'hi', 'tung']):
-        base['reply'] = 'Përshëndetje! Mund të të ndihmoj me stacionin më të afërt, linjat, oraret, stacionet e një linje dhe sugjerimin nga A në B.'
-        base['suggestions'] = ['Cili është stacioni më i afërt?', 'Kur kalon L1?', 'Si të shkoj nga Qendra Shkodër në Zogaj?']
+    all_station_names = ', '.join(station['name'] for station in stations)
+
+    if any(term in q for term in ['pershendetje', 'pershnetje', 'hello', 'hi', 'tung', 'tungjatjeta']):
+        base['reply'] = (
+            'Përshëndetje! Mund të të ndihmoj me stacionin më të afërt, linjat aktive, '
+            'oraret, stacionet e një linje dhe sugjerimin e rrugës nga një pikë në tjetrën.'
+        )
+        base['suggestions'] = [
+            'Cili është stacioni më i afërt?',
+            'Më trego linjat aktive',
+            'Kur kalon L1?',
+            'Si të shkoj nga Qendra Shkodër në Zogaj?'
+        ]
         return base
 
-    if any(term in q for term in ['me i afert', 'nearest', 'closest', 'near me', 'prane meje']):
+    if any(term in q for term in ['ndihme', 'help', 'cfare mund', 'cfa mund', 'si funksionon', 'cka ben']):
+        base['reply'] = (
+            'Mund të më pyesësh për stacionin më të afërt, linjat aktive, oraret, '
+            'stacionet që kalon një linjë, linjat që kalojnë në një stacion, '
+            'ose si të shkosh nga një vend në një tjetër.'
+        )
+        base['suggestions'] = [
+            'Më trego linjat aktive',
+            'Më trego të gjitha stacionet',
+            'Kur kalon L2?',
+            'Cilat linja kalojnë te Qendra Shkodër?'
+        ]
+        return base
+
+    if any(term in q for term in [
+        'linjat aktive', 'te gjitha linjat', 'të gjitha linjat',
+        'cfare linjash ka', 'cfare linja ka', 'me trego linjat',
+        'cilat linja ka', 'linjat'
+    ]):
+        route_lines = [f"{r['id']} • {r['name']}" for r in routes]
+        base['reply'] = "Linjat aktive në dataset janë: " + '; '.join(route_lines) + '.'
+        base['suggestions'] = [
+            'Kur kalon L1?',
+            'Cilat stacione kalon L2?',
+            'Cilat linja kalojnë te Bahçallëk?'
+        ]
+        return base
+
+    if any(term in q for term in [
+        'te gjitha stacionet', 'të gjitha stacionet', 'me trego stacionet',
+        'cilat jane stacionet', 'cilat janë stacionet', 'stacionet ne shkoder',
+        'stacionet në shkodër', 'cfare stacionesh ka'
+    ]):
+        base['reply'] = f"Stacionet në dataset janë: {all_station_names}."
+        base['suggestions'] = [
+            'Cilat linja kalojnë te Qendra Shkodër?',
+            'Cili është stacioni më i afërt?',
+            'Si të shkoj nga Qendra Shkodër në Shirokë?'
+        ]
+        return base
+
+    if any(term in q for term in ['me i afert', 'më i afërt', 'nearest', 'closest', 'near me', 'prane meje']):
         if lat is None or lng is None:
             base['reply'] = 'Aktivizo vendndodhjen që të gjej stacionin më të afërt dhe distancën.'
             base['suggestions'] = ['Lejo location', 'Më trego linjat aktive']
             return base
+
         closest = nearest_station(float(lat), float(lng), stations)
         nearby = enrich_station_distances(float(lat), float(lng), stations, 3)
         nearby_text = ', '.join(f"{s['name']} ({s['distance_km']} km)" for s in nearby)
-        base['reply'] = f"Stacioni më i afërt është {closest['name']} në {closest['city']}, rreth {closest['distance_km']} km larg. Linjat kryesore: {', '.join(closest['routes'])}. Stacionet më pranë teje: {nearby_text}."
+
+        base['reply'] = (
+            f"Stacioni më i afërt është {closest['name']}, rreth {closest['distance_km']} km larg. "
+            f"Linjat që kalojnë aty: {', '.join(closest['routes'])}. "
+            f"Stacionet më pranë teje janë: {nearby_text}."
+        )
         base['focus_station_id'] = closest['id']
-        base['suggestions'] = ['Sa larg është ky stacion?', 'Cilat linja kalojnë aty?', 'Më jep oraret']
+        base['suggestions'] = [
+            'Sa larg është ky stacion?',
+            'Cilat linja kalojnë aty?',
+            'Më jep oraret'
+        ]
         return base
 
-    if any(term in q for term in ['sa larg', 'distance']) and lat is not None and lng is not None:
-        for station in stations:
-            names = [station['name'], station.get('area', '')] + station.get('aliases', [])
-            if any(norm(n) in q or q in norm(n) for n in names if n):
-                distance = round(haversine_km(float(lat), float(lng), station['lat'], station['lng']), 2)
-                base['reply'] = f"{station['name']} është rreth {distance} km larg nga vendndodhja jote aktuale."
-                base['focus_station_id'] = station['id']
-                base['suggestions'] = ['Cilat linja kalojnë aty?', 'Më trego në hartë']
-                return base
+    if any(term in q for term in ['sa larg', 'distance', 'largesia', 'largësia']) and lat is not None and lng is not None:
+        station = station_mentioned_in_text(message, stations) or match_station(message, stations)
+        if station:
+            distance = round(haversine_km(float(lat), float(lng), station['lat'], station['lng']), 2)
+            base['reply'] = f"{station['name']} është rreth {distance} km larg nga vendndodhja jote aktuale."
+            base['focus_station_id'] = station['id']
+            base['suggestions'] = [
+                'Cilat linja kalojnë aty?',
+                'Më trego në hartë',
+                'Më jep oraret'
+            ]
+            return base
 
-    if any(term in q for term in ['orari', 'kur kalon', 'schedule', 'nisja']):
+    if any(term in q for term in ['orari', 'kur kalon', 'schedule', 'nisja', 'autobusi i pare', 'autobusi i parë']):
         for route in routes:
             if norm(route['name']) in q or norm(route['id']) in q:
-                base['reply'] = f"{route['id']} • {route['name']} funksionon {route['schedule']}, me frekuencë {route['frequency']}. Nisja e parë: {route['first_departure']}, e fundit: {route['last_departure']}."
-                base['suggestions'] = ['Cilat stacione kalon kjo linjë?', 'Më sugjero një rrugë tjetër']
+                base['reply'] = (
+                    f"{route['id']} • {route['name']} funksionon {route['schedule']}, "
+                    f"me frekuencë {route['frequency']}. "
+                    f"Nisja e parë: {route['first_departure']}, e fundit: {route['last_departure']}."
+                )
+                base['suggestions'] = [
+                    'Cilat stacione kalon kjo linjë?',
+                    'A kalon kjo linjë te Qendra Shkodër?',
+                    'Më sugjero një rrugë'
+                ]
                 return base
+
         station = station_mentioned_in_text(message, stations) or match_station(message, stations)
         if station:
             lines = routes_for_station(station, routes)
             if lines:
-                text = '; '.join(f"{r['id']} {r['schedule']}" for r in lines)
-                base['reply'] = f"Nga stacioni {station['name']} kalojnë këto orare orientuese: {text}."
+                text = '; '.join(f"{r['id']} ({r['schedule']})" for r in lines)
+                base['reply'] = f"Nga stacioni {station['name']} kalojnë këto linja me orare orientuese: {text}."
                 base['focus_station_id'] = station['id']
-                base['suggestions'] = ['Cilat linja kalojnë aty?', 'Sa larg është ky stacion?']
+                base['suggestions'] = [
+                    'Cilat linja kalojnë aty?',
+                    'Sa larg është ky stacion?',
+                    'Më trego në hartë'
+                ]
                 return base
+
         base['reply'] = 'Shkruaj emrin e linjës ose stacionit, p.sh. “Kur kalon L1?” ose “Orari te Qendra Shkodër”.'
+        base['suggestions'] = [
+            'Kur kalon L1?',
+            'Kur kalon L2?',
+            'Orari te Bahçallëk'
+        ]
         return base
 
-    if any(term in q for term in ['cilat linja', 'linjat', 'which lines']):
+    if any(term in q for term in ['cilat linja', 'kalon aty', 'kalojne aty', 'kalojnë aty', 'which lines']):
         station = station_mentioned_in_text(message, stations) or match_station(message, stations)
         if station:
             lines = routes_for_station(station, routes)
             line_text = ', '.join(f"{r['id']} ({r['name']})" for r in lines) or ', '.join(station['routes'])
-            base['reply'] = f"Në stacionin {station['name']} ndalojnë: {line_text}."
+            base['reply'] = f"Në stacionin {station['name']} ndalojnë këto linja: {line_text}."
             base['focus_station_id'] = station['id']
-            base['suggestions'] = ['Më jep oraret', 'Sa larg është ky stacion?']
+            base['suggestions'] = [
+                'Më jep oraret',
+                'Sa larg është ky stacion?',
+                'Cilat stacione kalon L1?'
+            ]
             return base
 
-    if any(term in q for term in ['cilat stacione', 'stacionet', 'stops']) or 'kalon kjo linje' in q:
+    if any(term in q for term in ['a kalon', 'kalon te', 'kalon tek', 'a ndalon te']):
+        station = station_mentioned_in_text(message, stations) or match_station(message, stations)
+        for route in routes:
+            if norm(route['id']) in q or norm(route['name']) in q:
+                if station:
+                    if stop_in_route(route, station['name']):
+                        base['reply'] = f"Po, {route['id']} kalon te {station['name']}."
+                    else:
+                        base['reply'] = f"Jo, {route['id']} nuk kalon te {station['name']} sipas dataset-it aktual."
+                    base['focus_station_id'] = station['id']
+                    base['suggestions'] = [
+                        'Cilat stacione kalon kjo linjë?',
+                        'Kur kalon kjo linjë?',
+                        'Cilat linja kalojnë aty?'
+                    ]
+                    return base
+
+    if any(term in q for term in ['cilat stacione', 'stacionet', 'stops', 'ku kalon', 'kalon kjo linje', 'kalon kjo linjë']):
         for route in routes:
             if norm(route['name']) in q or norm(route['id']) in q:
                 base['reply'] = f"{route['id']} • {route['name']} kalon në këto stacione: {', '.join(route['stops'])}."
-                base['suggestions'] = ['Kur kalon kjo linjë?', 'Cila linjë shkon te qendra?']
+                base['suggestions'] = [
+                    'Kur kalon kjo linjë?',
+                    'A kalon kjo linjë te Qendra Shkodër?',
+                    'Më sugjero një rrugë'
+                ]
                 return base
 
     start, end = extract_from_to(message)
@@ -221,34 +342,64 @@ def generate_chat_reply(message: str, lat: Optional[float], lng: Optional[float]
         matches = route_options_between(start, end, routes)
         if matches:
             route = matches[0]
-            base['reply'] = f"Rruga e sugjeruar është {route['id']} • {route['name']}. Orari: {route['schedule']}. Stacionet kryesore: {', '.join(route['stops'])}."
-            base['suggestions'] = ['Më jep stacionet e kësaj linje', 'Kur nis autobusi i parë?']
+            base['reply'] = (
+                f"Rruga e sugjeruar është {route['id']} • {route['name']}. "
+                f"Orari: {route['schedule']}. "
+                f"Stacionet kryesore: {', '.join(route['stops'])}."
+            )
+            base['suggestions'] = [
+                'Më jep stacionet e kësaj linje',
+                'Kur nis autobusi i parë?',
+                'A kalon kjo linjë te Qendra Shkodër?'
+            ]
             return base
-        base['reply'] = 'Nuk gjeta linjë direkte në dataset-in aktual. Provo me emrat e stacioneve ose zonave kryesore.'
-        base['suggestions'] = ['Tregomë linjat aktive', 'Më gjej stacionin më të afërt']
+
+        base['reply'] = 'Nuk gjeta linjë direkte në dataset-in aktual. Provo me emrat e saktë të stacioneve ose zonave.'
+        base['suggestions'] = [
+            'Më trego stacionet',
+            'Më trego linjat aktive',
+            'Cilat linja kalojnë te Qendra Shkodër?'
+        ]
         return base
 
     for route in routes:
         if norm(route['name']) in q or q == norm(route['id']):
-            base['reply'] = f"{route['id']} • {route['name']} kalon në: {', '.join(route['stops'])}. Frekuenca: {route['frequency']}."
-            base['suggestions'] = ['Kur kalon kjo linjë?', 'Cilat stacione kalon kjo linjë?']
+            base['reply'] = (
+                f"{route['id']} • {route['name']} kalon në: {', '.join(route['stops'])}. "
+                f"Frekuenca: {route['frequency']}. Orari: {route['schedule']}."
+            )
+            base['suggestions'] = [
+                'Kur kalon kjo linjë?',
+                'Cilat stacione kalon kjo linjë?',
+                'A kalon kjo linjë te Bahçallëk?'
+            ]
             return base
 
     station = station_mentioned_in_text(message, stations) or match_station(message, stations)
     if station:
         line_names = ', '.join(station['routes'])
-        base['reply'] = f"{station['name']} ndodhet në {station['city']} / {station['area']}. Linjat që ndalojnë aty: {line_names}."
+        base['reply'] = (
+            f"{station['name']} ndodhet në {station['city']} / {station['area']}. "
+            f"Linjat që ndalojnë aty: {line_names}."
+        )
         base['focus_station_id'] = station['id']
-        base['suggestions'] = ['Më jep oraret', 'Sa larg është ky stacion?', 'Cilat linja kalojnë aty?']
+        base['suggestions'] = [
+            'Më jep oraret',
+            'Sa larg është ky stacion?',
+            'Cilat linja kalojnë aty?'
+        ]
         return base
 
-    if any(term in q for term in ['ndihme', 'help', 'cfare mund', 'cfa mund']):
-        base['reply'] = 'Mund të pyesësh: “Cili është stacioni më i afërt?”, “Kur kalon L1?”, “Cilat linja kalojnë te Qendra Shkodër?”, “Cilat stacione kalon L2?” ose “Si të shkoj nga Qendra Shkodër në Zogaj?”.'
-        base['suggestions'] = ['Cili është stacioni më i afërt?', 'Kur kalon L1?', 'Si të shkoj nga Qendra Shkodër në Zogaj?']
-        return base
-
-    base['reply'] = 'Nuk gjeta përgjigje të saktë për këtë pyetje. Provo me emrin e një stacioni, linje ose kërko “stacioni më i afërt”.'
-    base['suggestions'] = ['Më gjej stacionin më të afërt', 'Tregomë linjat aktive', 'Si të shkoj nga Qendra Shkodër në Zogaj?']
+    base['reply'] = (
+        'Nuk gjeta përgjigje të saktë për këtë pyetje. '
+        'Provo me emrin e një stacioni, linje ose pyet për stacionin më të afërt.'
+    )
+    base['suggestions'] = [
+        'Më trego linjat aktive',
+        'Më trego të gjitha stacionet',
+        'Cili është stacioni më i afërt?',
+        'Si të shkoj nga Qendra Shkodër në Zogaj?'
+    ]
     return base
 
 
@@ -296,12 +447,14 @@ def search_stations():
     q = request.args.get('q', '')
     if not q:
         return jsonify([])
+
     qn = norm(q)
     results = []
     for station in data['stations']:
         hay = ' '.join([station['name'], station['city'], station['area']] + station.get('aliases', []))
         if qn in norm(hay):
             results.append(station)
+
     return jsonify(results[:8])
 
 
@@ -345,16 +498,24 @@ def plan_trip():
             if first_stop and last_stop and start_station['city'] == first_stop['city'] and end_station['name'] == last_stop['name']:
                 return jsonify({
                     'found': False,
-                    'message': f"Nuk ka linjë direkte nga {start_station['name']} te {end_station['name']}, por mund të shkosh fillimisht te {first_stop['name']} dhe më pas të marrësh {route['id']} • {route['name']}."
+                    'message': (
+                        f"Nuk ka linjë direkte nga {start_station['name']} te {end_station['name']}, "
+                        f"por mund të shkosh fillimisht te {first_stop['name']} dhe më pas të marrësh "
+                        f"{route['id']} • {route['name']}."
+                    )
                 })
+
         return jsonify({
             'found': False,
-            'message': f"Nuk u gjet linjë direkte midis {start_station['name']} dhe {end_station['name']} në dataset-in aktual. Mund të shtoni një linjë të re ose lidhje ndërmjetëse."
+            'message': (
+                f"Nuk u gjet linjë direkte midis {start_station['name']} dhe {end_station['name']} "
+                f"në dataset-in aktual. Mund të shtoni një linjë të re ose lidhje ndërmjetëse."
+            )
         })
 
     return jsonify({
         'found': False,
-        'message': 'Nuk u gjet linjë direkte në dataset-in aktual. Provo emrin e një stacioni, zone ose qyteti tjetër.'
+        'message': 'Nuk u gjet linjë direkte në dataset-in aktual. Provo emrin e një stacioni ose zone tjetër.'
     })
 
 
