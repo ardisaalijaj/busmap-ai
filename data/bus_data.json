@@ -1,5 +1,5 @@
 {
-  "app_name": "SKTS BusMap AI",
+  "app_name": "BusMap AI",
   "city_center": {
     "lat": 42.0603,
     "lng": 19.5170
@@ -19,7 +19,7 @@
     },
     {
       "label": "Chatbot mode",
-      "value": "SKTS Assistant"
+      "value": "AI Assistant"
     }
   ],
   "quick_actions": [
