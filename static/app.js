@@ -59,7 +59,7 @@ function renderQuickActions(actions) {
 }
 
 function renderSummary(summary) {
-  summaryBoxEl.innerHTML = `${summary.total_routes} linja • ${summary.total_stations} stacione<br>${summary.supported_cities} qytete • ${summary.first_bus} - ${summary.last_bus}`;
+  summaryBoxEl.innerHTML = `${summary.total_routes} linja • ${summary.total_stations} stacione<br>${summary.supported_cities} qytet • ${summary.first_bus} - ${summary.last_bus}`;
 }
 
 function routeMatchesQuery(route, query) {
@@ -111,13 +111,15 @@ function createUserIcon() {
 }
 
 function initMap(center) {
-  map = L.map('map', { zoomControl: true }).setView([center.lat, center.lng], 8);
+  map = L.map('map', { zoomControl: true }).setView([center.lat, center.lng], 13);
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
   stationMarkers.clear();
+
   stations.forEach(station => {
     const marker = L.marker([station.lat, station.lng], { icon: createStationIcon() }).addTo(map);
     marker.bindPopup(station.popup_html);
@@ -131,12 +133,14 @@ function initMap(center) {
 function focusStation(stationId) {
   const station = stations.find(s => s.id === stationId);
   const marker = stationMarkers.get(stationId);
+
   if (!station || !marker || !map) return;
 
-  map.setView([station.lat, station.lng], station.city === 'Shkodër' || station.city === 'Tiranë' ? 13 : 11);
+  map.setView([station.lat, station.lng], 13);
   marker.openPopup();
 
   if (focusCircle) focusCircle.remove();
+
   focusCircle = L.circle([station.lat, station.lng], {
     radius: 250,
     color: '#f6c453',
@@ -148,12 +152,14 @@ function focusStation(stationId) {
 
 function updateUserMarker(lat, lng) {
   const coords = [lat, lng];
+
   if (!userMarker) {
     userMarker = L.marker(coords, { icon: createUserIcon() }).addTo(map);
     userMarker.bindPopup('Vendndodhja juaj');
   } else {
     userMarker.setLatLng(coords);
   }
+
   map.setView(coords, 13);
 }
 
@@ -170,6 +176,7 @@ function locateUser() {
   }
 
   statusEl.textContent = 'Po merret vendndodhja juaj...';
+
   navigator.geolocation.getCurrentPosition(async ({ coords }) => {
     currentPosition = { lat: coords.latitude, lng: coords.longitude };
     updateUserMarker(coords.latitude, coords.longitude);
@@ -182,12 +189,15 @@ function locateUser() {
 
 async function searchStations() {
   const q = stationSearchEl.value.trim();
+
   if (!q) {
-    stationResultsEl.innerHTML = '<div class="empty-state">Shkruaj emrin e një stacioni, zone ose qyteti.</div>';
+    stationResultsEl.innerHTML = '<div class="empty-state">Shkruaj emrin e një stacioni ose zone.</div>';
     return;
   }
+
   try {
     const results = await fetchJSON(`/api/search-stations?q=${encodeURIComponent(q)}`);
+
     stationResultsEl.innerHTML = results.length ? results.map(station => `
       <button class="station-result" data-id="${station.id}">
         <strong>${station.name}</strong>
@@ -213,6 +223,7 @@ async function searchStations() {
 async function planTrip() {
   const from = fromInputEl.value.trim();
   const to = toInputEl.value.trim();
+
   if (!from || !to) {
     tripResultEl.textContent = 'Plotëso të dy fushat për të marrë sugjerim.';
     return;
@@ -240,22 +251,29 @@ function renderChatSuggestions(suggestions = []) {
 async function sendChat(messageOverride = null) {
   const text = (messageOverride || chatInputEl.value).trim();
   if (!text) return;
+
   addMessage(text, 'user');
   chatInputEl.value = '';
+
   const typing = addMessage('BusMap AI po mendon...', 'bot', true);
 
   try {
     const payload = { message: text };
     if (currentPosition) Object.assign(payload, currentPosition);
+
     const res = await fetchJSON('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+
     typing.remove();
     addMessage(res.reply, 'bot');
     renderChatSuggestions(res.suggestions || []);
-    if (res.focus_station_id) focusStation(res.focus_station_id);
+
+    if (res.focus_station_id) {
+      focusStation(res.focus_station_id);
+    }
   } catch (error) {
     typing.remove();
     addMessage(error.message, 'bot');
@@ -278,24 +296,33 @@ async function initApp() {
   renderQuickActions(config.quick_actions);
   renderSummary(summary);
   renderRoutes();
+
   renderChatSuggestions([
     'Cili është stacioni më i afërt?',
-    'Kur kalon A1?',
-    'Cilat stacione kalon D1?',
-    'Si të shkoj nga Qendra Tiranë në Terminali Vlorë?'
+    'Kur kalon L1?',
+    'Cilat stacione kalon L2?',
+    'Si të shkoj nga Qendra Shkodër në Zogaj?'
   ]);
+
   initMap(config.city_center);
-  statusEl.textContent = `Aplikacioni u ngarkua me sukses me ${summary.total_stations} stacione në ${summary.supported_cities} qytete.`;
+
+  statusEl.textContent = `Aplikacioni u ngarkua me sukses me ${summary.total_stations} stacione në Shkodër.`;
 }
 
 routeSearchEl.addEventListener('input', (e) => renderRoutes(e.target.value));
 searchStationBtn.addEventListener('click', searchStations);
-stationSearchEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchStations(); });
+stationSearchEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') searchStations();
+});
 planTripBtn.addEventListener('click', planTrip);
 locateBtn.addEventListener('click', locateUser);
+
 centerBtn.addEventListener('click', () => {
-  if (map && appConfig) map.setView([appConfig.city_center.lat, appConfig.city_center.lng], 8);
+  if (map && appConfig) {
+    map.setView([appConfig.city_center.lat, appConfig.city_center.lng], 13);
+  }
 });
+
 sendBtn.addEventListener('click', () => sendChat());
 chatInputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendChat();
