@@ -5,10 +5,22 @@
     "lng": 19.5170
   },
   "hero_stats": [
-    { "label": "Stacione aktive", "value": "5" },
-    { "label": "Linja urbane", "value": "2" },
-    { "label": "Qytete të mbuluara", "value": "1" },
-    { "label": "Chatbot mode", "value": "SKTS Assistant" }
+    {
+      "label": "Stacione aktive",
+      "value": "5"
+    },
+    {
+      "label": "Linja urbane",
+      "value": "2"
+    },
+    {
+      "label": "Qytete të mbuluara",
+      "value": "1"
+    },
+    {
+      "label": "Chatbot mode",
+      "value": "SKTS Assistant"
+    }
   ],
   "quick_actions": [
     "Gjej stacionin më të afërt",
@@ -21,11 +33,19 @@
       "id": 1,
       "name": "Qendra Shkodër",
       "city": "Shkodër",
-      "area": "Center",
+      "area": "Qendra",
       "lat": 42.06773,
       "lng": 19.51269,
-      "aliases": ["qendra", "center", "qender shkoder"],
-      "routes": ["L1", "L2"]
+      "aliases": [
+        "qendra",
+        "qender",
+        "qender shkoder",
+        "center"
+      ],
+      "routes": [
+        "L1",
+        "L2"
+      ]
     },
     {
       "id": 2,
@@ -34,8 +54,13 @@
       "area": "Bahçallëk",
       "lat": 42.03917,
       "lng": 19.49556,
-      "aliases": ["bahcallek"],
-      "routes": ["L1"]
+      "aliases": [
+        "bahcallek",
+        "bahçallek"
+      ],
+      "routes": [
+        "L1"
+      ]
     },
     {
       "id": 3,
@@ -44,8 +69,12 @@
       "area": "Fermentim",
       "lat": 42.0740,
       "lng": 19.5180,
-      "aliases": ["fermentim"],
-      "routes": ["L1"]
+      "aliases": [
+        "fermentim"
+      ],
+      "routes": [
+        "L1"
+      ]
     },
     {
       "id": 4,
@@ -54,8 +83,13 @@
       "area": "Shirokë",
       "lat": 42.0578,
       "lng": 19.4561,
-      "aliases": ["shiroke"],
-      "routes": ["L2"]
+      "aliases": [
+        "shiroke",
+        "shirokë"
+      ],
+      "routes": [
+        "L2"
+      ]
     },
     {
       "id": 5,
@@ -64,28 +98,40 @@
       "area": "Zogaj",
       "lat": 42.0881,
       "lng": 19.4112,
-      "aliases": ["zogaj"],
-      "routes": ["L2"]
+      "aliases": [
+        "zogaj"
+      ],
+      "routes": [
+        "L2"
+      ]
     }
   ],
   "routes": [
     {
       "id": "L1",
-      "name": "Fermentim - Center - Bahçallëk",
+      "name": "Fermentim - Qendra Shkodër - Bahçallëk",
       "schedule": "06:30 - 22:00",
       "frequency": "06:30-14:30 çdo 15 min; 14:30-22:00 çdo 30 min",
       "first_departure": "06:30",
       "last_departure": "22:00",
-      "stops": ["Fermentim", "Qendra Shkodër", "Bahçallëk"]
+      "stops": [
+        "Fermentim",
+        "Qendra Shkodër",
+        "Bahçallëk"
+      ]
     },
     {
       "id": "L2",
-      "name": "Center - Shirokë - Zogaj",
+      "name": "Qendra Shkodër - Shirokë - Zogaj",
       "schedule": "Sipas orarit ditor",
       "frequency": "Disa nisje në ditë",
       "first_departure": "07:30",
       "last_departure": "14:30",
-      "stops": ["Qendra Shkodër", "Shirokë", "Zogaj"]
+      "stops": [
+        "Qendra Shkodër",
+        "Shirokë",
+        "Zogaj"
+      ]
     }
   ]
 }
